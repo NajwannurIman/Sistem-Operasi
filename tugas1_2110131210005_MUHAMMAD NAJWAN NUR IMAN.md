@@ -2,7 +2,6 @@
 ## Nama : Muhammad Najwan Nur Iman
 ## NIM  : 2110131210005
 <br>
-RR
 <hr>
 
 Merk laptop yang saya gunakan adalah <i><b>ACER</b></i> dengan nama <i> ACER ASPIRE E5-476G</i> dan memiliki spesifikasi sebagai berikut: <br>
