@@ -723,4 +723,4 @@ adapt it to their own hardware with ease. Also, it has a huge community of devel
 opers writing apps, mostly in the familiar Java programming language. Even so,
 the past years have shown that the dominance may not last, and Android’s competi-
 tors are eager to claw back some of its market share. We will look at Android in
-detail in Sec. 10.8.<br>
+detail in Sec. 10.8.<br>s
