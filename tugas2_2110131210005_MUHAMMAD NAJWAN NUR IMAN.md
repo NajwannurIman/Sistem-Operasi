@@ -22,3 +22,4 @@ boards, disks, a keyboard, a monitor, and similar physical objects. On top of th
 hardware is the software. Most computers have two modes of operation: kernel
 mode and user mode. The operating system, the most fundamental piece of soft-
 ware, runs in <B>kernel mode</b> (also called <b>supervisor mode</b>). In this mode it has
+uagsiuahsa
