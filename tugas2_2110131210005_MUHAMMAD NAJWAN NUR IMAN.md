@@ -723,4 +723,591 @@ adapt it to their own hardware with ease. Also, it has a huge community of devel
 opers writing apps, mostly in the familiar Java programming language. Even so,
 the past years have shown that the dominance may not last, and Android’s competi-
 tors are eager to claw back some of its market share. We will look at Android in
-detail in Sec. 10.8.<br>s
+detail in Sec. 10.8.<br>
+<br>
+<h1><b>1.3 COMPUTER HARDWARE REVIEW</b></h1>
+<br>
+An operating system is intimately tied to the hardware of the computer it runs
+on. It extends the computer’s instruction set and manages its resources. To work,
+it must know a great deal about the hardware, at least about how the hardware appears to the programmer. For this reason, let us briefly review computer hardware
+as found in modern personal computers. After that, we can start getting into the details of what operating systems do and how they work<br>
+Conceptually, a simple personal computer can be abstracted to a model resembling that of Fig. 1-6. The CPU, memory, and I/O devices are all connected by a
+system bus and communicate with one another over it. Modern personal computers
+have a more complicated structure, involving multiple buses, which we will look at
+later. For the time being, this model will be sufficient. In the following sections,
+we will briefly review these components and examine some of the hardware issues
+that are of concern to operating system designers. Needless to say, this will be a
+very compact summary. Many books have been written on the subject of computer
+hardware and computer organization. Two well-known ones are by Tanenbaum
+and Austin (2012) and Patterson and Hennessy (2013).<br>
+<center><img src=foto1.6.png></center>
+<br>
+<br>
+<H3><b>1.3.1 Processors</b></h3>
+The ‘‘brain’’ of the computer is the CPU. It fetches instructions from memory
+and executes them. The basic cycle of every CPU is to fetch the first instruction
+from memory, decode it to determine its type and operands, execute it, and then
+fetch, decode, and execute subsequent instructions. The cycle is repeated until the
+program finishes. In this way, programs are carried out.<br>
+Each CPU has a specific set of instructions that it can execute. Thus an x86
+processor cannot execute ARM programs and an ARM processor cannot execute
+x86 programs. Because accessing memory to get an instruction or data word takes
+much longer than executing an instruction, all CPUs contain some registers inside
+to hold key variables and temporary results. Thus the instruction set generally contains instructions to load a word from memory into a register, and store a word
+from a register into memory. Other instructions combine two operands from registers, memory, or both into a result, such as adding two words and storing the result
+in a register or in memory.<br>
+n addition to the general registers used to hold variables and temporary results, most computers have sev eral special registers that are visible to the programmer. One of these is the program counter, which contains the memory address of the next instruction to be fetched. After that instruction has been fetched,
+the program counter is updated to point to its successor.<br>
+Another register is the stack pointer, which points to the top of the current
+stack in memory. The stack contains one frame for each procedure that has been
+entered but not yet exited. A procedure’s stack frame holds those input parameters,
+local variables, and temporary variables that are not kept in registers<br>
+Yet another register is the PSW (Program Status Word). This register contains the condition code bits, which are set by comparison instructions, the CPU
+priority, the mode (user or kernel), and various other control bits. User programs
+may normally read the entire PSW but typically may write only some of its fields.
+The PSW plays an important role in system calls and I/O<br>
+The operating system must be fully aware of all the registers. When time multiplexing the CPU, the operating system will often stop the running program to
+(re)start another one. Every time it stops a running program, the operating system
+must save all the registers so they can be restored when the program runs later.<br>
+To improve performance, CPU designers have long abandoned the simple
+model of fetching, decoding, and executing one instruction at a time. Many modern
+CPUs have facilities for executing more than one instruction at the same time. For
+example, a CPU might have separate fetch, decode, and execute units, so that while
+it is executing instruction n, it could also be decoding instruction n + 1 and fetching instruction n + 2. Such an organization is called a pipeline and is illustrated in
+Fig. 1-7(a) for a pipeline with three stages. Longer pipelines are common. In most
+pipeline designs, once an instruction has been fetched into the pipeline, it must be
+executed, even if the preceding instruction was a conditional branch that was taken. Pipelines cause compiler writers and operating system writers great headaches because they expose the complexities of the underlying machine to them and they
+have to deal with them.<br>
+<br>
+<img src=foto1.7.png>
+<br>
+Even more advanced than a pipeline design is a superscalar CPU, shown in
+Fig. 1-7(b). In this design, multiple execution units are present, for example, one
+for integer arithmetic, one for floating-point arithmetic, and one for Boolean operations. Two or more instructions are fetched at once, decoded, and dumped into a
+holding buffer until they can be executed. As soon as an execution unit becomes
+available, it looks in the holding buffer to see if there is an instruction it can handle, and if so, it removes the instruction from the buffer and executes it. An implication of this design is that program instructions are often executed out of order. For
+the most part, it is up to the hardware to make sure the result produced is the same
+one a sequential implementation would have produced, but an annoying amount of
+the complexity is foisted onto the operating system, as we shall see.<br>
+Most CPUs, except very simple ones used in embedded systems, have two
+modes, kernel mode and user mode, as mentioned earlier. Usually, a bit in the PSW
+controls the mode. When running in kernel mode, the CPU can execute every instruction in its instruction set and use every feature of the hardware. On desktop
+and server machines, the operating system normally runs in kernel mode, giving it
+access to the complete hardware. On most embedded systems, a small piece runs
+in kernel mode, with the rest of the operating system running in user mode.<br>
+User programs always run in user mode, which permits only a subset of the instructions to be executed and a subset of the features to be accessed. Generally, all
+instructions involving I/O and memory protection are disallowed in user mode.
+Setting the PSW mode bit to enter kernel mode is also forbidden, of course.<br>
+To obtain services from the operating system, a user program must make a system call, which traps into the kernel and invokes the operating system. The TRAP
+instruction switches from user mode to kernel mode and starts the operating system. When the work has been completed, control is returned to the user program at
+the instruction following the system call. We will explain the details of the system
+call mechanism later in this chapter. For the time being, think of it as a special kind
+of procedure call that has the additional property of switching from user mode to
+kernel mode. As a note on typography, we will use the lower-case Helvetica font
+to indicate system calls in running text, like this: read.<br>
+It is worth noting that computers have traps other than the instruction for executing a system call. Most of the other traps are caused by the hardware to warn
+of an exceptional situation such as an attempt to divide by 0 or a floating-point
+underflow. In all cases the operating system gets control and must decide what to
+do. Sometimes the program must be terminated with an error. Other times the
+error can be ignored (an underflowed number can be set to 0). Finally, when the
+program has announced in advance that it wants to handle certain kinds of conditions, control can be passed back to the program to let it deal with the problem.<br>
+<br>
+<h4><b>Multithreaded and Multicore Chips</b></h4>
+<br>
+Moore’s law states that the number of transistors on a chip doubles every 18
+months. This ‘‘law’’ is not some kind of law of physics, like conservation of momentum, but is an observation by Intel cofounder Gordon Moore of how fast process engineers at the semiconductor companies are able to shrink their transistors.
+Moore’s law has held for over three decades now and is expected to hold for at
+least one more. After that, the number of atoms per transistor will become too
+small and quantum mechanics will start to play a big role, preventing further
+shrinkage of transistor sizes.<br>
+The abundance of transistors is leading to a problem: what to do with all of
+them? We saw one approach above: superscalar architectures, with multiple functional units. But as the number of transistors increases, even more is possible. One
+obvious thing to do is put bigger caches on the CPU chip. That is definitely happening, but eventually the point of diminishing returns will be reached<br>
+The obvious next step is to replicate not only the functional units, but also
+some of the control logic. The Intel Pentium 4 introduced this property, called
+multithreading or hyperthreading (Intel’s name for it), to the x86 processor, and
+several other CPU chips also have it—including the SPARC, the Power5, the Intel
+Xeon, and the Intel Core family. To a first approximation, what it does is allow the
+CPU to hold the state of two different threads and then switch back and forth on a
+nanosecond time scale. (A thread is a kind of lightweight process, which, in turn,
+is a running program; we will get into the details in Chap. 2.) For example, if one
+of the processes needs to read a word from memory (which takes many clock
+cycles), a multithreaded CPU can just switch to another thread. Multithreading
+does not offer true parallelism. Only one process at a time is running, but
+thread-switching time is reduced to the order of a nanosecond.<br>
+Multithreading has implications for the operating system because each thread
+appears to the operating system as a separate CPU. Consider a system with two
+actual CPUs, each with two threads. The operating system will see this as four
+CPUs. If there is only enough work to keep two CPUs busy at a certain point in time, it may inadvertently schedule two threads on the same CPU, with the other
+CPU completely idle. This choice is far less efficient than using one thread on each
+CPU.<br>
+Beyond multithreading, many CPU chips now hav e four, eight, or more complete processors or cores on them. The multicore chips of Fig. 1-8 effectively carry
+four minichips on them, each with its own independent CPU. (The caches will be
+explained below.) Some processors, like Intel Xeon Phi and the Tilera TilePro, already sport more than 60 cores on a single chip. Making use of such a multicore
+chip will definitely require a multiprocessor operating system.<br>
+Incidentally, in terms of sheer numbers, nothing beats a modern <b>GPU (Graphics Processing Unit)</b>. A GPU is a processor with, literally, thousands of tiny cores.
+They are very good for many small computations done in parallel, like rendering
+polygons in graphics applications. They are not so good at serial tasks. They are
+also hard to program. While GPUs can be useful for operating systems (e.g., encryption or processing of network traffic), it is not likely that much of the operating
+system itself will run on the GPUs.<br>
+<br>
+<img src=foto1.8.png>
+<br>
+<br>
+<h4><b>1.3.2 Memory</b></h4>
+The second major component in any computer is the memory. Ideally, a memory should be extremely fast (faster than executing an instruction so that the CPU is
+not held up by the memory), abundantly large, and dirt cheap. No current technology satisfies all of these goals, so a different approach is taken. The memory system is constructed as a hierarchy of layers, as shown in Fig. 1-9. The top layers
+have higher speed, smaller capacity, and greater cost per bit than the lower ones,
+often by factors of a billion or more.<br>
+The top layer consists of the registers internal to the CPU. They are made of
+the same material as the CPU and are thus just as fast as the CPU. Consequently,
+there is no delay in accessing them. The storage capacity available in them is<br>
+<br>
+<img src=foto1.9.png>
+<br>
+typically 32 × 32 bits on a 32-bit CPU and 64 × 64 bits on a 64-bit CPU. Less than
+1 KB in both cases. Programs must manage the registers (i.e., decide what to keep
+in them) themselves, in software.<br>
+Next comes the cache memory, which is mostly controlled by the hardware.
+Main memory is divided up into cache lines, typically 64 bytes, with addresses 0
+to 63 in cache line 0, 64 to 127 in cache line 1, and so on. The most heavily used
+cache lines are kept in a high-speed cache located inside or very close to the CPU.
+When the program needs to read a memory word, the cache hardware checks to see
+if the line needed is in the cache. If it is, called a cache hit, the request is satisfied
+from the cache and no memory request is sent over the bus to the main memory.
+Cache hits normally take about two clock cycles. Cache misses have to go to
+memory, with a substantial time penalty. Cache memory is limited in size due to its
+high cost. Some machines have two or even three levels of cache, each one slower
+and bigger than the one before it.<br>
+Caching plays a major role in many areas of computer science, not just caching
+lines of RAM. Whenever a resource can be divided into pieces, some of which are
+used much more heavily than others, caching is often used to improve performance. Operating systems use it all the time. For example, most operating systems
+keep (pieces of) heavily used files in main memory to avoid having to fetch them
+from the disk repeatedly. Similarly, the results of converting long path names like
+/home/ast/projects/minix3/src/kernel/clock.c
+into the disk address where the file is located can be cached to avoid repeated
+lookups. Finally, when the address of a Web page (URL) is converted to a network
+address (IP address), the result can be cached for future use. Many other uses exist.
+In any caching system, several questions come up fairly soon, including:<br>
+1. When to put a new item into the cache.
+2. Which cache line to put the new item in.
+3. Which item to remove from the cache when a slot is needed.
+4. Where to put a newly evicted item in the larger memory.
+<br>
+Not every question is relevant to every caching situation. For caching lines of main
+memory in the CPU cache, a new item will generally be entered on every cache
+miss. The cache line to use is generally computed by using some of the high-order
+bits of the memory address referenced. For example, with 4096 cache lines of 64
+bytes and 32 bit addresses, bits 6 through 17 might be used to specify the cache
+line, with bits 0 to 5 the byte within the cache line. In this case, the item to remove
+is the same one as the new data goes into, but in other systems it might not be.
+Finally, when a cache line is rewritten to main memory (if it has been modified
+since it was cached), the place in memory to rewrite it to is uniquely determined by
+the address in question.<br>
+Caches are such a good idea that modern CPUs have two of them. The first
+level or L1 cache is always inside the CPU and usually feeds decoded instructions
+into the CPU’s execution engine. Most chips have a second L1 cache for very
+heavily used data words. The L1 caches are typically 16 KB each. In addition,
+there is often a second cache, called the L2 cache, that holds several megabytes of
+recently used memory words. The difference between the L1 and L2 caches lies in
+the timing. Access to the L1 cache is done without any delay, whereas access to
+the L2 cache involves a delay of one or two clock cycles.<br>
+On multicore chips, the designers have to decide where to place the caches. In
+Fig. 1-8(a), a single L2 cache is shared by all the cores. This approach is used in
+Intel multicore chips. In contrast, in Fig. 1-8(b), each core has its own L2 cache.
+This approach is used by AMD. Each strategy has its pros and cons. For example,
+the Intel shared L2 cache requires a more complicated cache controller but the
+AMD way makes keeping the L2 caches consistent more difficult.<br>
+Main memory comes next in the hierarchy of Fig. 1-9. This is the workhorse
+of the memory system. Main memory is usually called RAM (Random Access
+Memory). Old-timers sometimes call it core memory, because computers in the
+1950s and 1960s used tiny magnetizable ferrite cores for main memory. They hav e
+been gone for decades but the name persists. Currently, memories are hundreds of
+megabytes to several gigabytes and growing rapidly. All CPU requests that cannot
+be satisfied out of the cache go to main memory<br>
+In addition to the main memory, many computers have a small amount of nonvolatile random-access memory. Unlike RAM, nonvolatile memory does not lose
+its contents when the power is switched off.<b> ROM (Read Only Memory)</b> is programmed at the factory and cannot be changed afterward. It is fast and inexpensive. On some computers, the bootstrap loader used to start the computer is contained in ROM. Also, some I/O cards come with ROM for handling low-level device control.<br>
+<b>EEPROM (Electrically Erasable PROM)</b> and flash memory are also nonvolatile, but in contrast to ROM can be erased and rewritten. However, writing
+them takes orders of magnitude more time than writing RAM, so they are used in
+the same way ROM is, only with the additional feature that it is now possible to
+correct bugs in programs they hold by rewriting them in the field<br>
+Flash memory is also commonly used as the storage medium in portable electronic devices. It serves as film in digital cameras and as the disk in portable music
+players, to name just two uses. Flash memory is intermediate in speed between
+RAM and disk. Also, unlike disk memory, if it is erased too many times, it wears
+out.<br>
+Yet another kind of memory is CMOS, which is volatile. Many computers use
+CMOS memory to hold the current time and date. The CMOS memory and the
+clock circuit that increments the time in it are powered by a small battery, so the
+time is correctly updated, even when the computer is unplugged. The CMOS memory can also hold the configuration parameters, such as which disk to boot from.
+CMOS is used because it draws so little power that the original factory-installed
+battery often lasts for several years. However, when it begins to fail, the computer
+can appear to have Alzheimer’s disease, forgetting things that it has known for
+years, like which hard disk to boot from<br>
+<br>
+<h4><b>1.3.3 Disks</b><h4>
+<br>
+Next in the hierarchy is magnetic disk (hard disk). Disk storage is two orders
+of magnitude cheaper than RAM per bit and often two orders of magnitude larger
+as well. The only problem is that the time to randomly access data on it is close to
+three orders of magnitude slower. The reason is that a disk is a mechanical device,
+as shown in Fig. 1-10.<br>
+<center> <img src=foto1.10.png> </Center>
+ A disk consists of one or more metal platters that rotate at 5400, 7200, 10,800
+RPM or more. A mechanical arm pivots over the platters from the corner, similar
+to the pickup arm on an old 33-RPM phonograph for playing vinyl records.<br>
+Information is written onto the disk in a series of concentric circles. At any giv en
+arm position, each of the heads can read an annular region called a track. Together, all the tracks for a given arm position form a cylinder.<br>
+Each track is divided into some number of sectors, typically 512 bytes per sector. On modern disks, the outer cylinders contain more sectors than the inner ones.
+Moving the arm from one cylinder to the next takes about 1 msec. Moving it to a
+random cylinder typically takes 5 to 10 msec, depending on the drive. Once the
+arm is on the correct track, the drive must wait for the needed sector to rotate under
+the head, an additional delay of 5 msec to 10 msec, depending on the drive’s RPM.
+Once the sector is under the head, reading or writing occurs at a rate of 50 MB/sec
+on low-end disks to 160 MB/sec on faster ones.<br>
+Sometimes you will hear people talk about disks that are really not disks at all,
+like <b>SSDs, (Solid State Disks)</b>. SSDs do not have moving parts, do not contain
+platters in the shape of disks, and store data in (Flash) memory. The only ways in
+which they resemble disks is that they also store a lot of data which is not lost
+when the power is off.<br>
+Many computers support a scheme known as virtual memory, which we will
+discuss at some length in Chap. 3. This scheme makes it possible to run programs
+larger than physical memory by placing them on the disk and using main memory
+as a kind of cache for the most heavily executed parts. This scheme requires remapping memory addresses on the fly to convert the address the program generated to the physical address in RAM where the word is located. This mapping is
+done by a part of the CPU called the MMU (Memory Management Unit), as
+shown in Fig. 1-6<br>
+The presence of caching and the MMU can have a major impact on performance. In a multiprogramming system, when switching from one program to
+another, sometimes called a context switch, it may be necessary to flush all modified blocks from the cache and change the mapping registers in the MMU. Both of
+these are expensive operations, and programmers try hard to avoid them. We will
+see some of the implications of their tactics later<br>
+<br>
+<h4><b>1.3.4 I/O Devices</b></h4>
+<br>
+The CPU and memory are not the only resources that the operating system
+must manage. I/O devices also interact heavily with the operating system. As we
+saw in Fig. 1-6, I/O devices generally consist of two parts: a controller and the device itself. The controller is a chip or a set of chips that physically controls the device. It accepts commands from the operating system, for example, to read data
+from the device, and carries them out.<br>
+In many cases, the actual control of the device is complicated and detailed, so
+it is the job of the controller to present a simpler (but still very complex) interface
+to the operating system. For example, a disk controller might accept a command to read sector 11,206 from disk 2. The controller then has to convert this linear sector
+number to a cylinder, sector, and head. This conversion may be complicated by the
+fact that outer cylinders have more sectors than inner ones and that some bad sectors have been remapped onto other ones. Then the controller has to determine
+which cylinder the disk arm is on and give it a command to move in or out the requisite number of cylinders. It has to wait until the proper sector has rotated under
+the head and then start reading and storing the bits as they come off the drive,
+removing the preamble and computing the checksum. Finally, it has to assemble
+the incoming bits into words and store them in memory. To do all this work, controllers often contain small embedded computers that are programmed to do their
+work.<br>
+The other piece is the actual device itself. Devices have fairly simple interfaces, both because they cannot do much and to make them standard. The latter is
+needed so that any SATA disk controller can handle any SAT A disk, for example.
+SATA stands for Serial ATA and AT A in turn stands for AT Attachment. In case
+you are curious what AT stands for, this was IBM’s second generation ‘‘Personal
+Computer Advanced Technology’’ built around the then-extremely-potent 6-MHz
+80286 processor that the company introduced in 1984. What we learn from this is
+that the computer industry has a habit of continuously enhancing existing acronyms with new prefixes and suffixes. We also learned that an adjective like ‘‘advanced’’ should be used with great care, or you will look silly thirty years down the
+line<br>
+SATA is currently the standard type of disk on many computers. Since the actual device interface is hidden behind the controller, all that the operating system
+sees is the interface to the controller, which may be quite different from the interface to the device.<br>
+Because each type of controller is different, different software is needed to
+control each one. The software that talks to a controller, giving it commands and
+accepting responses, is called a <b>device driver</b>. Each controller manufacturer has to
+supply a driver for each operating system it supports. Thus a scanner may come
+with drivers for OS X, Windows 7, Windows 8, and Linux, for example.<br>
+To be used, the driver has to be put into the operating system so it can run in
+kernel mode. Drivers can actually run outside the kernel, and operating systems
+like Linux and Windows nowadays do offer some support for doing so. The vast
+majority of the drivers still run below the kernel boundary. Only very few current
+systems, such as MINIX 3, run all drivers in user space. Drivers in user space must
+be allowed to access the device in a controlled way, which is not straightforward.<br>
+There are three ways the driver can be put into the kernel. The first way is to
+relink the kernel with the new driver and then reboot the system. Many older UNIX
+systems work like this. The second way is to make an entry in an operating system
+file telling it that it needs the driver and then reboot the system. At boot time, the
+operating system goes and finds the drivers it needs and loads them. Windows
+works this way. The third way is for the operating system to be able to accept new drivers while running and install them on the fly without the need to reboot. This
+way used to be rare but is becoming much more common now. Hot-pluggable
+devices, such as USB and IEEE 1394 devices (discussed below), always need dynamically loaded drivers.<br>
+Every controller has a small number of registers that are used to communicate
+with it. For example, a minimal disk controller might have registers for specifying
+the disk address, memory address, sector count, and direction (read or write). To
+activate the controller, the driver gets a command from the operating system, then
+translates it into the appropriate values to write into the device registers. The collection of all the device registers forms the<b> I/O port</b> space, a subject we will come
+back to in Chap. 5.<br>
+On some computers, the device registers are mapped into the operating system’s address space (the addresses it can use), so they can be read and written like
+ordinary memory words. On such computers, no special I/O instructions are required and user programs can be kept away from the hardware by not putting these
+memory addresses within their reach (e.g., by using base and limit registers). On
+other computers, the device registers are put in a special I/O port space, with each
+register having a port address. On these machines, special IN and OUT instructions
+are available in kernel mode to allow drivers to read and write the registers. The
+former scheme eliminates the need for special I/O instructions but uses up some of
+the address space. The latter uses no address space but requires special instructions. Both systems are widely use<br>
+Input and output can be done in three different ways. In the simplest method, a
+user program issues a system call, which the kernel then translates into a procedure
+call to the appropriate driver. The driver then starts the I/O and sits in a tight loop
+continuously polling the device to see if it is done (usually there is some bit that indicates that the device is still busy). When the I/O has completed, the driver puts
+the data (if any) where they are needed and returns. The operating system then returns control to the caller. This method is called busy waiting and has the disadvantage of tying up the CPU polling the device until it is finished<br>
+The second method is for the driver to start the device and ask it to give an interrupt when it is finished. At that point the driver returns. The operating system
+then blocks the caller if need be and looks for other work to do. When the controller detects the end of the transfer, it generates an interrupt to signal completion.<br>
+Interrupts are very important in operating systems, so let us examine the idea
+more closely. In Fig. 1-11(a) we see a three-step process for I/O. In step 1, the
+driver tells the controller what to do by writing into its device registers. The controller then starts the device. When the controller has finished reading or writing
+the number of bytes it has been told to transfer, it signals the interrupt controller
+chip using certain bus lines in step 2. If the interrupt controller is ready to accept
+the interrupt (which it may not be if it is busy handling a higher-priority one), it asserts a pin on the CPU chip telling it, in step 3. In step 4, the interrupt contr<br>
+puts the number of the device on the bus so the CPU can read it and know which
+device has just finished (many devices may be running at the same time).<br>
+<br>
+<center><img src=foto1.11.png></center>
+<br>
+Once the CPU has decided to take the interrupt, the program counter and PSW
+are typically then pushed onto the current stack and the CPU switched into kernel
+mode. The device number may be used as an index into part of memory to find the
+address of the interrupt handler for this device. This part of memory is called the
+interrupt vector. Once the interrupt handler (part of the driver for the interrupting
+device) has started, it removes the stacked program counter and PSW and saves
+them, then queries the device to learn its status. When the handler is all finished, it
+returns to the previously running user program to the first instruction that was not
+yet executed. These steps are shown in Fig. 1-11(b).<br>
+The third method for doing I/O makes use of special hardware: a <b>DMA
+(Direct Memory Access)</b> chip that can control the flow of bits between memory
+and some controller without constant CPU intervention. The CPU sets up the
+DMA chip, telling it how many bytes to transfer, the device and memory addresses
+involved, and the direction, and lets it go. When the DMA chip is done, it causes
+an interrupt, which is handled as described above. DMA and I/O hardware in general will be discussed in more detail in Chap. 5.<br>
+Interrupts can (and often do) happen at highly inconvenient moments, for example, while another interrupt handler is running. For this reason, the CPU has a
+way to disable interrupts and then reenable them later. While interrupts are disabled, any devices that finish continue to assert their interrupt signals, but the CPU
+is not interrupted until interrupts are enabled again. If multiple devices finish
+while interrupts are disabled, the interrupt controller decides which one to let
+through first, usually based on static priorities assigned to each device. The
+highest-priority device wins and gets to be serviced first. The others must wait.
+<br>
+<br>
+<h4><b>1.3.5 Buses</h4></b>
+<br>
+The organization of Fig. 1-6 was used on minicomputers for years and also on
+the original IBM PC. However, as processors and memories got faster, the ability
+of a single bus (and certainly the IBM PC bus) to handle all the traffic was strained
+to the breaking point. Something had to give. As a result, additional buses were
+added, both for faster I/O devices and for CPU-to-memory traffic. As a consequence of this evolution, a large x86 system currently looks something like
+Fig. 1-12.
+<br>
+<center><img src=foto1.12.png></center>
+This system has many buses (e.g., cache, memory, PCIe, PCI, USB, SATA, and
+DMI), each with a different transfer rate and function. The operating system must
+be aware of all of them for configuration and management. The main bus is the
+<b>PCIe (Peripheral Component Interconnect Express)</b> bus.<br>
+The PCIe bus was invented by Intel as a successor to the older PCI bus, which
+in turn was a replacement for the original ISA (Industry Standard Architecture)
+bus. Capable of transferring tens of gigabits per second, PCIe is much faster than
+its predecessors. It is also very different in nature. Up to its creation in 2004, most
+buses were parallel and shared. A shared bus architecture means that multiple devices use the same wires to transfer data. Thus, when multiple devices have data to
+send, you need an arbiter to determine who can use the bus. In contrast, PCIe
+makes use of dedicated, point-to-point connections. A parallel bus architecture as
+used in traditional PCI means that you send each word of data over multiple wires.
+For instance, in regular PCI buses, a single 32-bit number is sent over 32 parallel
+wires. In contrast to this, PCIe uses a serial bus architecture and sends all bits in<br>
+a message through a single connection, known as a lane, much like a network
+packet. This is much simpler, because you do not have to ensure that all 32 bits
+arrive at the destination at exactly the same time. Parallelism is still used, because
+you can have multiple lanes in parallel. For instance, we may use 32 lanes to carry
+32 messages in parallel. As the speed of peripheral devices like network cards and
+graphics adapters increases rapidly, the PCIe standard is upgraded every 3–5 years.
+For instance, 16 lanes of PCIe 2.0 offer 64 gigabits per second. Upgrading to PCIe
+3.0 will give you twice that speed and PCIe 4.0 will double that again.<br>
+Meanwhile, we still have many leg acy devices for the older PCI standard. As
+we see in Fig. 1-12, these devices are hooked up to a separate hub processor. In
+the future, when we consider PCI no longer merely old, but ancient, it is possible
+that all PCI devices will attach to yet another hub that in turn connects them to the
+main hub, creating a tree of buses.<br>
+In this configuration, the CPU talks to memory over a fast DDR3 bus, to an external graphics device over PCIe and to all other devices via a hub over a DMI
+(Direct Media Interface) bus. The hub in turn connects all the other devices,
+using the Universal Serial Bus to talk to USB devices, the SATA bus to interact
+with hard disks and DVD drives, and PCIe to transfer Ethernet frames. We hav e already mentioned the older PCI devices that use a traditional PCI bus.<br>
+Moreover, each of the cores has a dedicated cache and a much larger cache that
+is shared between them. Each of these caches introduces another bus<br>
+The USB (Universal Serial Bus) was invented to attach all the slow I/O devices, such as the keyboard and mouse, to the computer. Howev er, calling a modern USB 3.0 device humming along at 5 Gbps ‘‘slow’’ may not come naturally for
+the generation that grew up with 8-Mbps ISA as the main bus in the first IBM PCs.
+USB uses a small connector with four to eleven wires (depending on the version),
+some of which supply electrical power to the USB devices or connect to ground.
+USB is a centralized bus in which a root device polls all the I/O devices every 1
+msec to see if they hav e any traffic. USB 1.0 could handle an aggregate load of 12
+Mbps, USB 2.0 increased the speed to 480 Mbps, and USB 3.0 tops at no less than
+5 Gbps. Any USB device can be connected to a computer and it will function immediately, without requiring a reboot, something pre-USB devices required, much
+to the consternation of a generation of frustrated users.<br>
+The <b>SCSI (Small Computer System Interface)</b> bus is a high-performance bus
+intended for fast disks, scanners, and other devices needing considerable bandwidth. Nowadays, we find them mostly in servers and workstations. They can run
+at up to 640 MB/sec.<br>
+To work in an environment such as that of Fig. 1-12, the operating system has
+to know what peripheral devices are connected to the computer and configure
+them. This requirement led Intel and Microsoft to design a PC system called plug
+and play, based on a similar concept first implemented in the Apple Macintosh.
+Before plug and play, each I/O card had a fixed interrupt request level and fixed addresses for its I/O registers. For example, the keyboard was interrupt 1 and used I/O addresses 0x60 to 0x64, the floppy disk controller was interrupt 6 and used I/O
+addresses 0x3F0 to 0x3F7, and the printer was interrupt 7 and used I/O addresses
+0x378 to 0x37A, and so on<br>
+So far, so good. The trouble came in when the user bought a sound card and a
+modem card and both happened to use, say, interrupt 4. They would conflict and
+would not work together. The solution was to include DIP switches or jumpers on
+ev ery I/O card and instruct the user to please set them to select an interrupt level
+and I/O device addresses that did not conflict with any others in the user’s system.
+Teenagers who devoted their lives to the intricacies of the PC hardware could
+sometimes do this without making errors. Unfortunately, nobody else could, leading to chaos.<br>
+What plug and play does is have the system automatically collect information
+about the I/O devices, centrally assign interrupt levels and I/O addresses, and then
+tell each card what its numbers are. This work is closely related to booting the
+computer, so let us look at that. It is not completely trivial.<br>
+<br>
+<h4><b>1.3.6 Booting the Computer</b></h4>
+<br>
+Very briefly, the boot process is as follows. Every PC contains a parentboard
+(formerly called a motherboard before political correctness hit the computer industry). On the parentboard is a program called the system BIOS (Basic Input Output System). The BIOS contains low-level I/O software, including procedures to
+read the keyboard, write to the screen, and do disk I/O, among other things. Nowadays, it is held in a flash RAM, which is nonvolatile but which can be updated by
+the operating system when bugs are found in the BIOS.<br>
+When the computer is booted, the BIOS is started. It first checks to see how
+much RAM is installed and whether the keyboard and other basic devices are installed and responding correctly. It starts out by scanning the PCIe and PCI buses
+to detect all the devices attached to them. If the devices present are different from
+when the system was last booted, the new devices are configured.<br>
+The BIOS then determines the boot device by trying a list of devices stored in
+the CMOS memory. The user can change this list by entering a BIOS configuration
+program just after booting. Typically, an attempt is made to boot from a CD-ROM
+(or sometimes USB) drive, if one is present. If that fails, the system boots from the
+hard disk. The first sector from the boot device is read into memory and executed.
+This sector contains a program that normally examines the partition table at the
+end of the boot sector to determine which partition is active. Then a secondary boot
+loader is read in from that partition. This loader reads in the operating system
+from the active partition and starts it.<br>
+The operating system then queries the BIOS to get the configuration information. For each device, it checks to see if it has the device driver. If not, it asks
+the user to insert a CD-ROM containing the driver (supplied by the device’s manufacturer) or to download it from the Internet. Once it has all the device drivers, the operating system loads them into the kernel. Then it initializes its tables, creates
+whatever background processes are needed, and starts up a login program or GUI.<br>
+<br>
+<br>
+<h1><b> 1.4 THE OPERATING SYSTEM ZOO</b></h1>
+Operating systems have been around now for over half a century. During this
+time, quite a variety of them have been developed, not all of them widely known.
+In this section we will briefly touch upon nine of them. We will come back to
+some of these different kinds of systems later in the book.<br>
+<br>
+<h4><b>1.4.1 Mainframe Operating Systems</b></h4>
+<br>
+At the high end are the operating systems for mainframes, those room-sized
+computers still found in major corporate data centers. These computers differ from
+personal computers in terms of their I/O capacity. A mainframe with 1000 disks
+and millions of gigabytes of data is not unusual; a personal computer with these
+specifications would be the envy of its friends. Mainframes are also making something of a comeback as high-end Web servers, servers for large-scale electronic
+commerce sites, and servers for business-to-business transactions.<br>
+The operating systems for mainframes are heavily oriented toward processing
+many jobs at once, most of which need prodigious amounts of I/O. They typically
+offer three kinds of services: batch, transaction processing, and timesharing. A
+batch system is one that processes routine jobs without any interactive user present.
+Claims processing in an insurance company or sales reporting for a chain of stores
+is typically done in batch mode. Transaction-processing systems handle large numbers of small requests, for example, check processing at a bank or airline reservations. Each unit of work is small, but the system must handle hundreds or thousands per second. Timesharing systems allow multiple remote users to run jobs on
+the computer at once, such as querying a big database. These functions are closely
+related; mainframe operating systems often perform all of them. An example
+mainframe operating system is OS/390, a descendant of OS/360. However, mainframe operating systems are gradually being replaced by UNIX variants such as
+Linux.<br>
+<h4><b>1.4.2 Server Operating Systems</b></h4>
+One level down are the server operating systems. They run on servers, which
+are either very large personal computers, workstations, or even mainframes. They
+serve multiple users at once over a network and allow the users to share hardware
+and software resources. Servers can provide print service, file service, or Web service. Internet providers run many server machines to support their customers
+and Websites use servers to store the Web pages and handle the incoming requests.
+Typical server operating systems are Solaris, FreeBSD, Linux and Windows Server
+201x.<br>
+<br>
+<h4><b>1.4.3 Multiprocessor Operating Systems</b></h4> 
+<br>
+An increasingly common way to get major-league computing power is to connect multiple CPUs into a single system. Depending on precisely how they are
+connected and what is shared, these systems are called parallel computers, multicomputers, or multiprocessors. They need special operating systems, but often
+these are variations on the server operating systems, with special features for communication, connectivity, and consistency<br>
+With the recent advent of multicore chips for personal computers, even
+conventional desktop and notebook operating systems are starting to deal with at
+least small-scale multiprocessors and the number of cores is likely to grow over
+time. Luckily, quite a bit is known about multiprocessor operating systems from
+years of previous research, so using this knowledge in multicore systems should
+not be hard. The hard part will be having applications make use of all this computing power. Many popular operating systems, including Windows and Linux, run
+on multiprocessors.<br>
+<br>
+<h4><b>1.4.4 Personal Computer Operating Systems</b></h4> 
+<br>
+The next category is the personal computer operating system. Modern ones all
+support multiprogramming, often with dozens of programs started up at boot time.
+Their job is to provide good support to a single user. They are widely used for
+word processing, spreadsheets, games, and Internet access. Common examples are
+Linux, FreeBSD, Windows 7, Windows 8, and Apple’s OS X. Personal computer
+operating systems are so widely known that probably little introduction is needed.
+In fact, many people are not even aware that other kinds exist.<br>
+<br>
+<h4><b>1.4.5 Handheld Computer Operating Systems</b></h4> 
+<br>
+Continuing on down to smaller and smaller systems, we come to tablets,
+smartphones and other handheld computers. A handheld computer, originally
+known as a PDA (Personal Digital Assistant), is a small computer that can be
+held in your hand during operation. Smartphones and tablets are the best-known
+examples. As we have already seen, this market is currently dominated by
+Google’s Android and Apple’s iOS, but they hav e many competitors. Most of these
+devices boast multicore CPUs, GPS, cameras and other sensors, copious amounts
+of memory, and sophisticated operating systems. Moreover, all of them have more
+third-party applications (‘‘apps’’) than you can shake a (USB) stick at.<br>
+<br>
+<h4><b>1.4.6 Embedded Operating Systems</b></h4>
+<br>
+Embedded systems run on the computers that control devices that are not generally thought of as computers and which do not accept user-installed software.
+Typical examples are microwave ovens, TV sets, cars, DVD recorders, traditional
+phones, and MP3 players. The main property which distinguishes embedded systems from handhelds is the certainty that no untrusted software will ever run on it.
+You cannot download new applications to your microwave oven—all the software
+is in ROM. This means that there is no need for protection between applications,
+leading to design simplification. Systems such as Embedded Linux, QNX and
+VxWorks are popular in this domain.<br>
+<br>
+<h4><b>1.4.7 Sensor-Node Operating Systems</b></h4>
+<br>
+Networks of tiny sensor nodes are being deployed for numerous purposes.
+These nodes are tiny computers that communicate with each other and with a base
+station using wireless communication. Sensor networks are used to protect the
+perimeters of buildings, guard national borders, detect fires in forests, measure
+temperature and precipitation for weather forecasting, glean information about
+enemy movements on battlefields, and much more.<br>
+The sensors are small battery-powered computers with built-in radios. They
+have limited power and must work for long periods of time unattended outdoors,
+frequently in environmentally harsh conditions. The network must be robust
+enough to tolerate failures of individual nodes, which happen with ever-increasing
+frequency as the batteries begin to run down.<br>
+Each sensor node is a real computer, with a CPU, RAM, ROM, and one or
+more environmental sensors. It runs a small, but real operating system, usually one
+that is event driven, responding to external events or making measurements periodically based on an internal clock. The operating system has to be small and simple
+because the nodes have little RAM and battery lifetime is a major issue. Also, as
+with embedded systems, all the programs are loaded in advance; users do not suddenly start programs they downloaded from the Internet, which makes the design
+much simpler. TinyOS is a well-known operating system for a sensor node.<br>
+<br>
+<h4><b>1.4.8 Real-Time Operating Systems</b></h4>
+<br>
+Another type of operating system is the real-time system. These systems are
+characterized by having time as a key parameter. For example, in industrial process-control systems, real-time computers have to collect data about the production
+process and use it to control machines in the factory. Often there are hard deadlines
+that must be met. For example, if a car is moving down an assembly line, certain
+actions must take place at certain instants of time. If, for example, a welding robot
+welds too early or too late, the car will be ruined. If the action absolutely must occur at a certain moment (or within a certain range), we have a hard real-time
+system. Many of these are found in industrial process control, avionics, military,
+and similar application areas. These systems must provide absolute guarantees that
+a certain action will occur by a certain time.<br>
+A soft real-time system, is one where missing an occasional deadline, while
+not desirable, is acceptable and does not cause any permanent damage. Digital
+audio or multimedia systems fall in this category. Smartphones are also soft realtime systems<br>
+Since meeting deadlines is crucial in (hard) real-time systems, sometimes the
+operating system is simply a library linked in with the application programs, with
+ev erything tightly coupled and no protection between parts of the system. An example of this type of real-time system is eCos.<br>
+The categories of handhelds, embedded systems, and real-time systems overlap
+considerably. Nearly all of them have at least some soft real-time aspects. The embedded and real-time systems run only software put in by the system designers;
+users cannot add their own software, which makes protection easier. The handhelds
+and embedded systems are intended for consumers, whereas real-time systems are
+more for industrial usage. Nevertheless, they hav e a certain amount in common.<br>
+<h4><b>1.4.9 Smart Card Operating Systems</b></h4>
+<br>
+The smallest operating systems run on smart cards, which are credit-card-sized
+devices containing a CPU chip. They hav e very severe processing power and memory constraints. Some are powered by contacts in the reader into which they are
+inserted, but contactless smart cards are inductively powered, which greatly limits
+what they can do. Some of them can handle only a single function, such as electronic payments, but others can handle multiple functions. Often these are proprietary systems<be>
+Some smart cards are Java oriented. This means that the ROM on the smart
+card holds an interpreter for the Java Virtual Machine (JVM). Java applets (small
+programs) are downloaded to the card and are interpreted by the JVM interpreter.
+Some of these cards can handle multiple Java applets at the same time, leading to
+multiprogramming and the need to schedule them. Resource management and protection also become an issue when two or more applets are present at the same
+time. These issues must be handled by the (usually extremely primitive) operating
+system present on the card.<br>
