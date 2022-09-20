@@ -85,4 +85,4 @@ Buka DISK MANAGER dengan cara :
 2. ketik <i>disk manager</i>
 3. klik tulisan <i> disk manager</i>
 
-ketika tampilan sudah sama dengan gambar diatas berarti anda sudah masuk ke disk manager, anda dapat melakukan update,disable dan uninstall pada device yang anda pilih dengan melakukan klik kanan pada device yang ingin anda pilih
+ketika tampilan sudah sama dengan gambar diatas berarti anda sudah masuk ke disk manager, anda dapat melakukan update,disable dan uninstall pada device yang anda pilih dengan melakukan klik kanan pada device yang ingin anda pilih.
