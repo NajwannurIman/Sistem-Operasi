@@ -740,7 +740,7 @@ that are of concern to operating system designers. Needless to say, this will be
 very compact summary. Many books have been written on the subject of computer
 hardware and computer organization. Two well-known ones are by Tanenbaum
 and Austin (2012) and Patterson and Hennessy (2013).<br>
-<center><img src=foto1.6.PNG></center>
+<p align="center"><img src=foto1.6.PNG>
 <br>
 <br>
 <H3><b>1.3.1 Processors</b></h3>
@@ -953,7 +953,7 @@ as well. The only problem is that the time to randomly access data on it is clos
 three orders of magnitude slower. The reason is that a disk is a mechanical device,
 as shown in Fig. 1-10.<br>
 <img src=foto1.10.PNG>
- A disk consists of one or more metal platters that rotate at 5400, 7200, 10,800
+A disk consists of one or more metal platters that rotate at 5400, 7200, 10,800
 RPM or more. A mechanical arm pivots over the platters from the corner, similar
 to the pickup arm on an old 33-RPM phonograph for playing vinyl records.<br>
 Information is written onto the disk in a series of concentric circles. At any giv en

@@ -45,10 +45,10 @@ menggunakannya.
 <hr>
 <h3>Contoh manajemen memori utama</h3>
 
-<p align = "justify"> 
+<p align = "justify">
 
 Memilih file apa yang akan di load di memori :
-<img src = customize.png><br>
+<img src = customize.PNG><br>
 
 1. Buka memori yang ingin di kelola.
 2. klik kanan dan pilih properties.
@@ -57,7 +57,7 @@ Memilih file apa yang akan di load di memori :
 
 <br>
 Mengalokasikan ruang pada memori :
-<img src = alokasi.png>
+<img src = alokasi.PNG >
 
 1. buka disk management dengan cara klik kanan pada logo windows.
 2. klik memori mana yang akan di alokasikan ruang nya.
@@ -86,3 +86,104 @@ Buka DISK MANAGER dengan cara :
 3. klik tulisan <i> disk manager</i>
 
 ketika tampilan sudah sama dengan gambar diatas berarti anda sudah masuk ke disk manager, anda dapat melakukan update,disable dan uninstall pada device yang anda pilih dengan melakukan klik kanan pada device yang ingin anda pilih.
+<hr>
+
+<p align="justify"> <h1> Layanan Sistem Operasi </h1>
+
+Sebuah sistem operasi yang baik menurut Tanenbaum harus memiliki layanan sebagai berikut:
+
+1. <b>Pembuatan program</b>, yaitu sistem operasi menyediakan fasilitas dan layanan untuk membantu para pemrogram untuk menulis program
+2. <b>Eksekusi program</b> adalah kemampuan sistem untuk "load" program ke memori dan menjalankan program yang dikehendaki user maupun sistem.
+3. <b>Operasi I/O</b> merupakan kegiatan dimana pengguna tidak dapat secara langsung mengakses sumber daya perangkat keras, sehingga sistem operasi harus menyediakan mekanisme untuk melakukan operasi I/O atas nama pengguna.
+4. <b> Sistem manipulasi berkas</b> adalah kemampuan program untuk operasi pada berkas (membaca, menulis, membuat, dan menghapus berkas yang berupa file atau direktori).
+5. <b>Komunikasi</b> adalah pertukaran data/ informasi antar dua atau lebih proses yang berada pada satu komputer (atau lebih).
+6. <b>Deteksi error</b> adalah kegiatan untuk menjaga kestabilan sistem dengan mendeteksi "error", perangkat keras maupun operasi yang dilakukan.
+7. <b>Deteksi dan Pemberian tanggapan pada kesalahan</b>, jika muncul permasalahan pada sistem komputer maka sistem operasi harus memberikan tanggapan yang menjelaskan kesalahan yang terjadi serta dampaknya terhadap aplikasi yang sedang berjalan.
+8. <b>Efesisensi penggunaan sistem</b>, diantaranya:
+
+- Resource allocator, yakni: mengalokasikan sumber-daya hardware maupun software ke beberapa pengguna atau mengalokasikan job yang jalan pada saat yang bersamaan ke beberapa komputer dalam jaringan.
+- Proteksi sistem untuk menjamin akses ke sistem sumber daya yang aman, dikendalikan oleh sistem sehingga pengguna dikontrol aksesnya ke sistem).
+
+9. <b>Accounting</b> adalah kegiatan merekam aktifitas pengguna, report pemakaian sumber daya. Sistem Operasi yang bagus harus mampu mengumpulkan data statistik penggunaan beragam sumber-daya dan memonitor parameter kinerja.
+
+<hr>
+<p align = "justify"> <h3> Contoh Layanan Sistem Operasi</h3>
+
+Contoh Pembuatan Program, bisa menggunakan vscode atau default dari pc/laptop menggunakan notepad/notepad++
+
+<img src = notepad.PNG>
+<br>
+gambar di atas merupakan pembuatan program menggunakan notepad++
+
+<hr>
+<p align = "justify">
+
+<h3>contoh eksekukusi program </h3>
+<img src = eksekusi.PNG>
+<br>
+caranya adalah dengan klik 2 kali atau klik kanan program mana yang ingin di jalankan (jika menggunakan klik kanan pilih <i>open</i>)
+
+<hr>
+<p align = "justify">
+
+<h3>Sistem Manipulasi Berkas</h3>
+<h3>Folder</h3>
+
+1. Membuat Folder baru 
+<img src = new_folder.PNG> 
+klik new folder pada bagian atas
+
+2. rename folder 
+<img src = rename.PNG>
+bisa melalui klik kanan lalu pilih rename atau tekan f2 atau klik rename pada logo diatas
+
+4. menghapus folder 
+<img src = delete.PNG>
+bisa belalui klik kanan lalu pilih delete atau klik ikon delete di atas
+<BR>
+<br>
+<h3> Berkas</h3>
+
+1. Membuat Berkas
+<img src = masuk.PNG>
+masuk ke folder yang akan di pakai
+<br>
+
+2. <img src = buat_berkas.PNG>
+klik ikon new item pada bagian atas lalu pilih berkas apa yang ingin di buat
+<br>
+<br>
+<hr>
+
+<h1>System  Call </h1>
+<p align="justify">System call adalah kejadian dimana kode program aplikasi memanggil kode program kernel sistem operasi. Salah satu mekanisme yang umum dipakai untuk system call adalah dengan menggunakan software interrupt.
+
+<h3>Contoh system call pada windows</h3>
+<br>
+<h3> cara membuka CLI/CMD pada windows</h3>
+1. buka CLI/CMD windows dengan cara <i>windows + R</i>
+2. lalu ketikan <i>cmd</i>
+<img src = winR.PNG>
+
+3. lalu tekan <i>OK</i>
+4. maka tampilan akan muncul seperti ini.
+<img src = cmd.PNG>
+
+<H3>Beberapa Command - Command pada CMD </h3>
+
+1. Systeminfo
+Merupakan Perintah CMD yang memilika fungsi untuk menampilkan informasi komputer yang kamu gunakan,
+cara menggunakannya ketik <i>systeminfo</i>pada cmd lalu <b>enter</b>
+<img src = systeminfo.PNG>
+<br>
+
+2. Tree 
+Untuk Menampilkan struktur dalam suatu folder
+cara menggunakannya ketik <i>tree</i>pada cmd lalu <b>enter</b>
+<img src = tree.PNG>
+<br>
+
+3. Tasklist 
+untuk menampilkam informasi aplikasi yang sedang berjalan pada komputer 
+cara menggunakannya ketik <i>tasklist</i>pada cmd lalu 
+<img src = tasklist.PNG>
