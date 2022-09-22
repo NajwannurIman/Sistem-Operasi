@@ -185,5 +185,5 @@ cara menggunakannya ketik <i>tree</i>pada cmd lalu <b>enter</b>
 
 3. Tasklist 
 untuk menampilkam informasi aplikasi yang sedang berjalan pada komputer 
-cara menggunakannya ketik <i>tasklist</i>pada cmd lalu 
+cara menggunakannya ketik <i>tasklist</i>pada cmd lalu .
 <img src = tasklist.PNG>
